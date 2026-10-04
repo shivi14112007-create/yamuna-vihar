@@ -4,7 +4,8 @@ import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 import { dbService, initPostgresDatabase } from './src/database/db.ts';
-import { generateAdminToken, requireAdminAuth, AuthenticatedRequest } from './src/server/auth.ts';
+import { generateAdminToken, requireAdminAuth } from './src/server/auth.ts';
+import type { AuthenticatedRequest } from './src/server/auth.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,19 +17,13 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Initialize PostgreSQL database schema and tables at server boot
-  try {
-    await initPostgresDatabase();
-    console.log('PostgreSQL database initialized and ready.');
-  } catch (err: any) {
-    if (isProd) {
-      console.error('[FATAL] Production database initialization failed. Halting server startup.');
-      console.error(err);
-      process.exit(1);
-    } else {
-      console.error('Database initialization warning (development fallback active):', err);
-    }
-  }
+  // Health check endpoints for deployment probes (Cloud Run / Render)
+  app.get('/healthz', (req, res) => {
+    res.status(200).send('OK');
+  });
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
   // API Routes
 
@@ -292,8 +287,22 @@ async function startServer() {
     }
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Yamuna Pledge Server running on http://0.0.0.0:${PORT}`);
+
+    // Initialize PostgreSQL database schema and tables
+    try {
+      await initPostgresDatabase();
+      console.log('✓ PostgreSQL database initialized and ready.');
+    } catch (err: any) {
+      if (isProd) {
+        console.error('\n[DATABASE CONNECTION ERROR IN PRODUCTION]:');
+        console.error(err?.message || err);
+        console.error('Note: Embedded PGlite fallback is disabled in production to protect memory limits.');
+      } else {
+        console.error('Database initialization warning (development fallback active):', err?.message || err);
+      }
+    }
   });
 }
 

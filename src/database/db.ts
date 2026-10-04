@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import { getDatabaseClient, DatabaseClient } from './postgres.ts';
-import { Pledge, AdminUser, PledgeFormData, ImpactStats, AnalyticsData } from '../types/index.ts';
+import { getDatabaseClient } from './postgres.ts';
+import type { DatabaseClient } from './postgres.ts';
+import type { Pledge, AdminUser, PledgeFormData, ImpactStats, AnalyticsData } from '../types/index.ts';
 
 function mapPledgeRow(row: any): Pledge {
   return {
