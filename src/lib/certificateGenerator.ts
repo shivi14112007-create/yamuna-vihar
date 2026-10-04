@@ -19,75 +19,85 @@ export async function generateQrCodeDataUrl(text: string): Promise<string> {
   }
 }
 
-export async function downloadCertificatePdf(elementId: string, certificateId: string, fullName: string): Promise<void> {
+const isTouchDevice = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+
+// Render the certificate node to a PNG data URL (works reliably on mobile Safari/Chrome)
+async function renderCertificate(elementId: string): Promise<string> {
   const element = document.getElementById(elementId);
   if (!element) {
     throw new Error('Certificate element not found');
   }
 
-  // Ensure document fonts have finished rendering
-  if (typeof document !== 'undefined' && 'fonts' in document) {
-    try {
-      await document.fonts.ready;
-    } catch {
-      // Fallback gracefully
-    }
+  try {
+    await document.fonts.ready;
+  } catch {
+    // ignore
   }
 
-  // Use skipFonts: true and fontEmbedCSS: '' to prevent html-to-image from inspecting
-  // cross-origin stylesheets (which triggers CSSStyleSheet.cssRules security errors)
-  const imgData = await htmlToImage.toPng(element, {
-    pixelRatio: 2.5,
+  const options = {
+    pixelRatio: 2, // 2000x1414 px: sharp, and safe for mobile canvas memory limits
     backgroundColor: '#ffffff',
     cacheBust: false,
     skipFonts: true,
     fontEmbedCSS: ''
-  });
+  };
 
-  // A4 Landscape is 297mm width by 210mm height
-  const pdf = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4'
-  });
+  // Warm-up render: Safari often drops images (QR code) on the very first render
+  await htmlToImage.toPng(element, options);
+  return htmlToImage.toPng(element, options);
+}
 
-  const pdfWidth = 297;
-  const pdfHeight = 210;
+// Save a file. On phones: open the share sheet ("Save to Files/Photos/WhatsApp").
+// Everywhere else (or if sharing fails): normal download.
+async function saveBlob(blob: Blob, filename: string): Promise<void> {
+  const file = new File([blob], filename, { type: blob.type });
 
-  pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-  
-  const cleanName = fullName.replace(/[^a-zA-Z0-9]/g, '_');
-  pdf.save(`Yamuna_Pledge_Certificate_${certificateId}_${cleanName}.pdf`);
+  if (isTouchDevice() && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Clean Yamuna Pledge Certificate' });
+      return;
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return; // user closed the share sheet
+      // otherwise fall through to normal download
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link); // must be in the DOM for iOS/Firefox
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+export async function downloadCertificatePdf(elementId: string, certificateId: string, fullName: string): Promise<void> {
+  try {
+    const imgData = await renderCertificate(elementId);
+
+    // A4 Landscape is 297mm x 210mm
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    pdf.addImage(imgData, 'PNG', 0, 0, 297, 210, undefined, 'FAST');
+
+    const cleanName = fullName.replace(/[^a-zA-Z0-9]/g, '_');
+    await saveBlob(pdf.output('blob'), `Yamuna_Pledge_Certificate_${certificateId}_${cleanName}.pdf`);
+  } catch (err) {
+    console.error('PDF download failed:', err);
+    alert('Could not create the PDF. Please try "Save Image" instead, or open this page in Chrome/Safari.');
+  }
 }
 
 export async function downloadCertificateImage(elementId: string, certificateId: string, fullName: string): Promise<void> {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    throw new Error('Certificate element not found');
+  try {
+    const dataUrl = await renderCertificate(elementId);
+    const blob = await (await fetch(dataUrl)).blob();
+
+    const cleanName = fullName.replace(/[^a-zA-Z0-9]/g, '_');
+    await saveBlob(blob, `Yamuna_Pledge_Certificate_${certificateId}_${cleanName}.png`);
+  } catch (err) {
+    console.error('Image download failed:', err);
+    alert('Could not save the image. Please open this page in Chrome/Safari and try again.');
   }
-
-  // Ensure document fonts have finished rendering
-  if (typeof document !== 'undefined' && 'fonts' in document) {
-    try {
-      await document.fonts.ready;
-    } catch {
-      // Fallback gracefully
-    }
-  }
-
-  // Use skipFonts: true and fontEmbedCSS: '' to prevent html-to-image from inspecting
-  // cross-origin stylesheets (which triggers CSSStyleSheet.cssRules security errors)
-  const dataUrl = await htmlToImage.toPng(element, {
-    pixelRatio: 3,
-    backgroundColor: '#ffffff',
-    cacheBust: false,
-    skipFonts: true,
-    fontEmbedCSS: ''
-  });
-
-  const link = document.createElement('a');
-  const cleanName = fullName.replace(/[^a-zA-Z0-9]/g, '_');
-  link.download = `Yamuna_Pledge_Certificate_${certificateId}_${cleanName}.png`;
-  link.href = dataUrl;
-  link.click();
 }
