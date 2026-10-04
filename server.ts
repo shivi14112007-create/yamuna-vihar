@@ -20,8 +20,14 @@ async function startServer() {
   try {
     await initPostgresDatabase();
     console.log('PostgreSQL database initialized and ready.');
-  } catch (err) {
-    console.error('Database initialization warning:', err);
+  } catch (err: any) {
+    if (isProd) {
+      console.error('[FATAL] Production database initialization failed. Halting server startup.');
+      console.error(err);
+      process.exit(1);
+    } else {
+      console.error('Database initialization warning (development fallback active):', err);
+    }
   }
 
   // API Routes

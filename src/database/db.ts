@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { getDatabaseClient, DatabaseClient } from './postgres.ts';
-import { isMongoActive, mongoService } from './mongo.ts';
 import { Pledge, AdminUser, PledgeFormData, ImpactStats, AnalyticsData } from '../types/index.ts';
 
 function mapPledgeRow(row: any): Pledge {
@@ -171,9 +170,6 @@ export function generateCertificateId(counter: number): string {
 export const dbService = {
   async getStats(): Promise<ImpactStats> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.getStats();
-    }
     
     // Total & Certificates
     const totalRes = await db.query(`SELECT COUNT(*) as total FROM pledges WHERE status = 'valid'`);
@@ -209,9 +205,6 @@ export const dbService = {
 
   async getAnalytics(): Promise<AnalyticsData> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.getAnalytics();
-    }
 
     // Pledges by date
     const dateRes = await db.query(`
@@ -286,9 +279,6 @@ export const dbService = {
     totalPages: number;
   }> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.getPledges(params);
-    }
 
     const conditions: string[] = [];
     const values: any[] = [];
@@ -363,27 +353,18 @@ export const dbService = {
 
   async getPledgeById(id: string): Promise<Pledge | undefined> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.getPledgeById(id);
-    }
     const res = await db.query('SELECT * FROM pledges WHERE id = $1', [id]);
     return res.rows[0] ? mapPledgeRow(res.rows[0]) : undefined;
   },
 
   async getPledgeByCertificateId(certificateId: string): Promise<Pledge | undefined> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.getPledgeByCertificateId(certificateId);
-    }
     const res = await db.query('SELECT * FROM pledges WHERE UPPER(certificate_id) = UPPER($1)', [certificateId.trim()]);
     return res.rows[0] ? mapPledgeRow(res.rows[0]) : undefined;
   },
 
   async findExistingPledgeByEmail(email: string): Promise<Pledge | undefined> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.findExistingPledgeByEmail(email);
-    }
     const res = await db.query(
       `SELECT * FROM pledges WHERE LOWER(email) = LOWER($1) AND status = 'valid' LIMIT 1`,
       [email.trim()]
@@ -393,9 +374,6 @@ export const dbService = {
 
   async createPledge(data: PledgeFormData): Promise<Pledge> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.createPledge(data);
-    }
 
     // Get and increment sequence counter atomically
     const seqRow = await db.query(`SELECT value FROM settings WHERE key = 'seq_counter'`);
@@ -435,27 +413,18 @@ export const dbService = {
 
   async deletePledge(id: string): Promise<boolean> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.deletePledge(id);
-    }
     const res = await db.query(`DELETE FROM pledges WHERE id = $1 RETURNING id`, [id]);
     return res.rows.length > 0 || (res.rowCount ?? 0) > 0;
   },
 
   async getAdminByEmail(email: string): Promise<AdminUser | undefined> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.getAdminByEmail(email);
-    }
     const res = await db.query(`SELECT * FROM admins WHERE LOWER(email) = LOWER($1)`, [email.trim()]);
     return res.rows[0] ? mapAdminRow(res.rows[0]) : undefined;
   },
 
   async exportCsv(): Promise<string> {
     const db = await initPostgresDatabase();
-    if (isMongoActive()) {
-      return await mongoService.exportCsv();
-    }
     const res = await db.query(`SELECT * FROM pledges ORDER BY created_at DESC`);
     const pledges = res.rows.map(mapPledgeRow);
 
