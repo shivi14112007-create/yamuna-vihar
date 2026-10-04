@@ -25,11 +25,23 @@ export async function downloadCertificatePdf(elementId: string, certificateId: s
     throw new Error('Certificate element not found');
   }
 
-  // Use html-to-image to avoid unsupported color function errors (like oklch)
+  // Ensure document fonts have finished rendering
+  if (typeof document !== 'undefined' && 'fonts' in document) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Fallback gracefully
+    }
+  }
+
+  // Use skipFonts: true and fontEmbedCSS: '' to prevent html-to-image from inspecting
+  // cross-origin stylesheets (which triggers CSSStyleSheet.cssRules security errors)
   const imgData = await htmlToImage.toPng(element, {
     pixelRatio: 2.5,
     backgroundColor: '#ffffff',
-    cacheBust: true
+    cacheBust: false,
+    skipFonts: true,
+    fontEmbedCSS: ''
   });
 
   // A4 Landscape is 297mm width by 210mm height
@@ -54,10 +66,23 @@ export async function downloadCertificateImage(elementId: string, certificateId:
     throw new Error('Certificate element not found');
   }
 
+  // Ensure document fonts have finished rendering
+  if (typeof document !== 'undefined' && 'fonts' in document) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Fallback gracefully
+    }
+  }
+
+  // Use skipFonts: true and fontEmbedCSS: '' to prevent html-to-image from inspecting
+  // cross-origin stylesheets (which triggers CSSStyleSheet.cssRules security errors)
   const dataUrl = await htmlToImage.toPng(element, {
     pixelRatio: 3,
     backgroundColor: '#ffffff',
-    cacheBust: true
+    cacheBust: false,
+    skipFonts: true,
+    fontEmbedCSS: ''
   });
 
   const link = document.createElement('a');
