@@ -16,7 +16,7 @@ import { AdminDashboard } from './components/Admin/AdminDashboard.tsx';
 import { CertificateView } from './components/CertificateView.tsx';
 import { downloadCertificatePdf, downloadCertificateImage } from './lib/certificateGenerator.ts';
 import { ImpactStats, Pledge, PledgeFormData } from './types/index.ts';
-import { ArrowLeft, Download, Maximize2, X } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 
 export default function App() {
   // Navigation State
@@ -310,7 +310,7 @@ export default function App() {
           <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-between p-4 sm:p-8">
             
             {/* Top Toolbar */}
-            <div className="max-w-5xl mx-auto w-full flex items-center justify-between pb-6 border-b border-slate-800">
+            <div className="max-w-5xl mx-auto w-full flex flex-wrap gap-3 items-center justify-between pb-6 border-b border-slate-800">
               <button
                 onClick={() => navigateTo('home')}
                 className="text-slate-300 hover:text-white flex items-center gap-2 text-sm transition"
@@ -319,7 +319,7 @@ export default function App() {
                 Back to Yamuna Pledge
               </button>
               
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {viewingCertData && (
                   <>
                     <button
@@ -354,7 +354,7 @@ export default function App() {
             </div>
 
             {/* Certificate Render */}
-            <div className="flex-1 flex items-center justify-center py-8 overflow-x-auto">
+            <div className="flex-1 flex items-center justify-center py-8">
               {loadingCert ? (
                 <div className="text-center text-slate-400">
                   <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
