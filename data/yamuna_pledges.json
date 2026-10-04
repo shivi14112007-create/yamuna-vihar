@@ -1,0 +1,28 @@
+{
+  "pledges": [
+    {
+      "id": "plg_1791121461594_302p127",
+      "certificateId": "YAMUNA-2026-000001",
+      "fullName": "Aarav Sharma",
+      "email": "aarav@example.com",
+      "city": "New Delhi",
+      "state": "Delhi",
+      "country": "India",
+      "organization": "Yamuna Guardians",
+      "pledgeAccepted": true,
+      "pledgeAcceptedAt": "2026-10-04T13:44:21.594Z",
+      "createdAt": "2026-10-04T13:44:21.594Z",
+      "status": "valid"
+    }
+  ],
+  "admins": [
+    {
+      "id": "admin_root_1",
+      "email": "admin@yamunapledge.gov.in",
+      "passwordHash": "$2b$10$f4GK6Npo13y6NV2QPSgvKunvFV7IzkDf4Z0L6VUaUdW1aMFj6Qse6",
+      "name": "Initiative Administrator",
+      "createdAt": "2026-10-04T13:44:14.997Z"
+    }
+  ],
+  "seqCounter": 1
+}

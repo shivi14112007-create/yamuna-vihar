@@ -1,0 +1,6 @@
+{
+  "name": "Yamuna Pledge",
+  "description": "Official citizen platform to take the sacred Clean Yamuna Pledge, receive personalized digital e-certificates, and verify commitments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
